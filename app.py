@@ -7,6 +7,8 @@ st.set_page_config(page_title="Company Intelligence Platform", page_icon="🔍",
 # --- SESSION STATE INITIALIZATION ---
 if "search_count" not in st.session_state:
     st.session_state.search_count = 0
+if "global_rate_limit_hit" not in st.session_state:
+    st.session_state.global_rate_limit_hit = False
 
 MAX_SEARCHES_PER_SESSION = 3
 
@@ -69,24 +71,35 @@ with col_input:
 with col_button:
     st.write("")  # Spacer for alignment
     
-    # Check if search limit is reached
-    search_limit_reached = st.session_state.search_count >= MAX_SEARCHES_PER_SESSION
+    # Safety checks for button disable logic
+    local_limit_reached = st.session_state.search_count >= MAX_SEARCHES_PER_SESSION
+    global_limit_hit = st.session_state.global_rate_limit_hit
+    button_disabled = local_limit_reached or global_limit_hit
+    
     analyze_button = st.button(
         "Analyze Website", 
         use_container_width=True,
-        disabled=search_limit_reached
+        disabled=button_disabled
     )
 
-# Show warning if limit is reached
-if search_limit_reached:
-    st.warning("Demo limit reached. Subscribe for unlimited access.")
-    st.markdown("[View Pricing Plans](https://rapidapi.com/pegate/api/company-insight-osint-api/pricing)")
+# Show appropriate warning messages
+if local_limit_reached and not global_limit_hit:
+    st.warning("You have reached the 3-search limit for this demo session. Please subscribe on RapidAPI for more access.")
+    st.link_button(
+        "Subscribe on RapidAPI",
+        "https://rapidapi.com/pegate/api/company-insight-osint-api/pricing",
+        use_container_width=True
+    )
+elif global_limit_hit:
+    st.error("Global API rate limit reached. The service is currently unavailable due to high demand. Please try again later or subscribe for dedicated access.")
+    st.link_button(
+        "Subscribe on RapidAPI",
+        "https://rapidapi.com/pegate/api/company-insight-osint-api/pricing",
+        use_container_width=True
+    )
 # --- START ANALYSIS ---
 if analyze_button:
     if target_url:
-        # Increment search counter immediately on button click
-        st.session_state.search_count += 1
-        
         with st.spinner("Analyzing website..."):
             
             # RapidAPI Endpoint
@@ -102,6 +115,9 @@ if analyze_button:
                 response = requests.get(api_url, headers=headers, params=querystring)
                 
                 if response.status_code == 200:
+                    # Only increment counter on successful analysis
+                    st.session_state.search_count += 1
+                    
                     data = response.json()
                     st.success("Analysis completed.")
                     st.divider()
@@ -191,8 +207,20 @@ if analyze_button:
                     # Rerun to update sidebar counters immediately
                     st.rerun()
                 else:
-                    st.error(f"Error occurred: {response.status_code}")
-                    st.write(response.text)
+                    # Handle HTTP 429 - Rate Limit Exceeded (Global API Rate Limit)
+                    if response.status_code == 429 or "Monthly limit reached" in response.text:
+                        st.session_state.global_rate_limit_hit = True
+                        st.warning("Today's free global demo limit has been reached due to high demand. To continue testing, you can subscribe to our \"Free Tier\" (5 requests/month) directly on RapidAPI for your own personal use!")
+                        st.link_button(
+                            "Subscribe on RapidAPI",
+                            "https://rapidapi.com/pegate/api/company-insight-osint-api/pricing",
+                            use_container_width=True
+                        )
+                        st.rerun()
+                    else:
+                        # Generic error message for other status codes
+                        st.error(f"Error occurred: {response.status_code}")
+                        st.write(response.text)
             except Exception as e:
                 st.error(f"A system error occurred: {e}")
     else:
