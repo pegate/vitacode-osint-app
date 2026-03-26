@@ -18,13 +18,12 @@ with st.sidebar:
     st.title("Subscription & Usage")
     st.markdown("---")
     
-    # Usage Statistics
+    # Usage Statistics (always fresh)
     st.markdown("### Session Usage")
     remaining_searches = MAX_SEARCHES_PER_SESSION - st.session_state.search_count
     progress = st.session_state.search_count / MAX_SEARCHES_PER_SESSION
     st.progress(progress, text=f"Searches Used: {st.session_state.search_count}/{MAX_SEARCHES_PER_SESSION}")
-    if remaining_searches > 0:
-        st.caption(f"Remaining: {remaining_searches} search{'es' if remaining_searches != 1 else ''} this session")
+    st.write(f"Remaining: {remaining_searches} search{'es' if remaining_searches != 1 else ''} this session")
     
     st.markdown("---")
     
@@ -85,6 +84,9 @@ if search_limit_reached:
 # --- START ANALYSIS ---
 if analyze_button:
     if target_url:
+        # Increment search counter immediately on button click
+        st.session_state.search_count += 1
+        
         with st.spinner("Analyzing website..."):
             
             # RapidAPI Endpoint
@@ -100,9 +102,6 @@ if analyze_button:
                 response = requests.get(api_url, headers=headers, params=querystring)
                 
                 if response.status_code == 200:
-                    # Increment search counter on successful analysis
-                    st.session_state.search_count += 1
-                    
                     data = response.json()
                     st.success("Analysis completed.")
                     st.divider()
@@ -188,6 +187,9 @@ if analyze_button:
                     # --- RAW JSON DATA FOR DEVELOPERS ---
                     with st.expander("Raw JSON Data"):
                         st.json(data)
+                    
+                    # Rerun to update sidebar counters immediately
+                    st.rerun()
                 else:
                     st.error(f"Error occurred: {response.status_code}")
                     st.write(response.text)
