@@ -11,15 +11,8 @@ if "search_count" not in st.session_state:
 MAX_SEARCHES_PER_SESSION = 3
 
 # --- HERO SECTION ---
-st.markdown("""
-<div style='text-align: center; padding: 30px 0; border-bottom: 1px solid #e0e0e0;'>
-    <h1 style='font-size: 2.2em; margin-bottom: 15px; color: #1a1a1a; font-weight: 600;'>Enterprise-Grade Company Intelligence & OSINT</h1>
-    <p style='font-size: 1em; color: #666; margin-bottom: 0; line-height: 1.6;'>
-        Analyze any business URL to extract technology stacks, company contacts, and digital presence insights instantly.
-    </p>
-</div>
-""", unsafe_allow_html=True)
-st.write("")
+st.title("Company Insight & OSINT API")
+st.markdown("Real-time lead enrichment and technical analysis powered by AI.")
 # --- PROFESSIONAL SIDEBAR ---
 with st.sidebar:
     st.title("Subscription & Usage")
@@ -64,12 +57,12 @@ with st.sidebar:
         """)
 
 # --- USER INPUT ---
-# Display free demo counter
+# Display free demo counter (subtle)
 remaining_searches_main = MAX_SEARCHES_PER_SESSION - st.session_state.search_count
 if remaining_searches_main > 0:
-    st.caption(f"Demo Searches Remaining: {remaining_searches_main}")
+    st.markdown(f"<p style='font-size: 12px; color: #999;'>Demo searches remaining: {remaining_searches_main}/{MAX_SEARCHES_PER_SESSION}</p>", unsafe_allow_html=True)
 else:
-    st.caption("Demo Searches Remaining: 0")
+    st.markdown("<p style='font-size: 12px; color: #999;'>Demo searches remaining: 0</p>", unsafe_allow_html=True)
 
 col_input, col_button = st.columns([4, 1], gap="medium")
 with col_input:
